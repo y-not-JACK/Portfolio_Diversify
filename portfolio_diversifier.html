@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Portfolio Architect | Enterprise Edition</title>
+    
+    <!-- Dependencies -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = { 
+            darkMode: 'class',
+            theme: { 
+                extend: { 
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { 
+                        primary: { 50: 'rgba(var(--theme-primary), 0.1)', 100: 'rgba(var(--theme-primary), 0.2)', 200: 'rgba(var(--theme-primary), 0.3)', 300: 'rgba(var(--theme-primary), 0.4)', 400: 'rgba(var(--theme-primary), 0.6)', 500: 'rgba(var(--theme-primary), 0.8)', 600: 'rgb(var(--theme-primary))', 700: 'rgba(var(--theme-primary), 0.9)', 800: 'rgba(var(--theme-primary), 0.95)', 900: 'rgba(var(--theme-primary), 1)' } 
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)'
+                    }
+                } 
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/patternomaly@1.3.2/dist/patternomaly.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { --theme-primary: 59, 130, 246; } /* Enterprise Blue */
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        /* Form Inputs Enterprise Styling */
+        .ent-input {
+            @apply w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm transition-all focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500;
+            @apply dark:bg-slate-900/50 dark:border-slate-700 dark:text-white dark:focus:border-primary-400 dark:focus:ring-primary-400/20;
+        }
+        
+        .selected-node { border-color: rgb(var(--theme-primary)) !important; border-width: 2px !important; box-shadow: 0 0 0 3px rgba(var(--theme-primary),0.1); background-color: rgba(var(--theme-primary),0.02); }
+        .error-node { border-color: #ef4444 !important; background-color: #fef2f2 !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1); }
+        .incomplete-node { border-color: #cbd5e1 !important; background-color: #f8fafc !important; }
+        .dark .error-node { background-color: rgba(239, 68, 68, 0.1) !important; border-color: #ef4444 !important; }
+        .dark .incomplete-node { background-color: #1e293b !important; border-color: #475569 !important; }
+        
+        #reader video { border-radius: 0.75rem; width: 100%; max-height: 300px; object-fit: cover;}
+
+        /* Mobile App Experience Overrides */
+        .mobile-active {
+            max-width: 430px !important;
+            margin: 0 auto !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            background-color: var(--tw-bg-opacity, 1) !important;
+            padding-bottom: 5rem !important; /* space for bottom nav */
+        }
+        @media (max-width: 640px) {
+            .mobile-active { max-width: 100% !important; box-shadow: none !important; }
+        }
+        .mobile-active .desktop-only { display: none !important; }
+        .mobile-active .mobile-only { display: flex !important; }
+        .mobile-active .flex-col.lg\:flex-row, .mobile-active .md\:flex-row { flex-direction: column !important; }
+        .mobile-active .grid.lg\:grid-cols-2 { grid-template-columns: 1fr !important; }
+        .mobile-active .md\:grid-cols-3, .mobile-active .md\:grid-cols-2 { grid-template-columns: 1fr !important; gap: 1rem !important; }
+        .mobile-active .p-5, .mobile-active .p-6, .mobile-active .md\:p-8, .mobile-active .md\:p-10 { padding: 1.25rem !important; }
+        .mobile-active .sticky.top-28, .mobile-active .sticky.top-0 { position: static !important; }
+        .mobile-active .rounded-2xl, .mobile-active .rounded-t-2xl, .mobile-active .rounded-b-2xl { border-radius: 0 !important; }
+        .mobile-active .app-card { border-radius: 1rem !important; }
+        
+        /* Enlarge Tap Targets & Prevent iOS Zoom */
+        .mobile-active input, .mobile-active select { font-size: 16px !important; } 
+        .mobile-active button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+        .mobile-active .shrink-0.w-5.h-5 { width: 36px !important; height: 36px !important; }
+        .mobile-active .h-64, .mobile-active .h-80, .mobile-active .h-96 { height: 280px !important; }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900/90 text-slate-800 dark:text-slate-200 min-h-screen transition-colors overflow-x-hidden">
+
+    <!-- RECURSIVE ASSET NODE TEMPLATE (Condensed 50% Row Height) -->
+    <script type="text/x-template" id="asset-node-template">
+        <div class="mb-2">
+            <div class="flex flex-wrap md:flex-nowrap items-center gap-2 p-1.5 rounded-lg border shadow-sm transition-all cursor-pointer hover:shadow-md" 
+                 :class="[
+                    level === 0 ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700' : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700',
+                    isSelected ? 'selected-node' : '', 
+                    childrenTotal > 100 ? 'error-node' : (node.children && node.children.length && childrenTotal < 100 ? 'incomplete-node' : 'hover:border-primary-400 dark:hover:border-primary-500')
+                 ]"
+                 @click.stop="$emit('select-node', node)">
+                
+                <div v-if="level > 0" class="w-3 h-px bg-slate-300 dark:bg-slate-600 shrink-0 ml-1"></div>
+                <div class="w-7 h-7 rounded flex items-center justify-center font-bold text-xs shrink-0 shadow-inner" :style="{ backgroundColor: node.color + '22', color: node.color, border: '1px solid ' + node.color + '44' }">
+                    {{ generateSymbol(node.name) }}
+                </div>
+                
+                <button v-if="node.children && node.children.length" @click.stop="node.isExpanded = !node.isExpanded" class="text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 w-5 h-5 flex items-center justify-center shrink-0 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                    <i :class="node.isExpanded ? 'fa-solid fa-chevron-down text-xs' : 'fa-solid fa-chevron-right text-xs'"></i>
+                </button>
+                <div v-else class="w-5 shrink-0"></div>
+
+                <input type="text" v-model="node.name" placeholder="Asset Name" @click.stop class="flex-1 bg-transparent outline-none text-sm font-semibold min-w-[100px] dark:text-white placeholder:text-slate-400 py-1">
+                
+                <!-- Fixed Missing Return Rate for smaller screens -->
+                <div v-if="level === 0" class="relative w-24 sm:w-28 shrink-0 hidden sm:block desktop-only">
+                    <span class="absolute left-2.5 top-1.5 text-slate-400 dark:text-slate-500 text-[10px] font-medium uppercase">Ret:</span>
+                    <input type="number" v-model.number="node.returnRate" @click.stop class="w-full pl-9 pr-5 py-1 border border-slate-200 dark:border-slate-700 rounded-md outline-none text-right text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-900/10 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-500/20 transition-all">
+                    <span class="absolute right-2 top-1.5 text-emerald-600 dark:text-emerald-400 text-[10px]">%</span>
+                </div>
+
+                <div class="flex items-center gap-1 shrink-0">
+                    <div class="relative w-20 sm:w-24">
+                        <input type="number" v-model.number="node.percentage" @click.stop class="w-full pr-6 pl-2 py-1 border border-slate-200 dark:border-slate-700 rounded-md outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 text-right text-sm font-bold bg-white dark:bg-slate-900 transition-all dark:text-white" :class="{'text-red-600 dark:text-red-400 border-red-300 focus:border-red-500 focus:ring-red-500/20': isError}">
+                        <span class="absolute right-2 top-1.5 text-slate-400 dark:text-slate-500 text-[10px] font-medium">%</span>
+                    </div>
+                </div>
+
+                <div class="w-20 sm:w-24 text-right font-bold text-xs shrink-0 hidden md:block desktop-only text-slate-700 dark:text-slate-200 tracking-tight">
+                    {{ isPrivacyMode ? '***' : formattedValue }}
+                </div>
+
+                <div class="flex items-center gap-1 shrink-0 border-l border-slate-200 dark:border-slate-700 pl-2 ml-1">
+                    <button @click.stop="removeSelf" class="text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 p-1.5 rounded-md transition-colors" title="Delete Asset"><i class="fa-solid fa-trash text-xs"></i></button>
+                </div>
+            </div>
+
+            <div v-if="childrenTotal > 100" class="mt-1.5 text-[11px] font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-3 py-1.5 rounded-md flex items-center gap-2 ml-6 md:ml-10 shadow-sm">
+                <i class="fa-solid fa-triangle-exclamation"></i> Error: Exceeds 100% ({{ childrenTotal }}%).
+            </div>
+            <div v-else-if="node.children && node.children.length && childrenTotal < 100" class="mt-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 px-3 py-1.5 rounded-md flex items-center gap-2 ml-6 md:ml-10 shadow-sm">
+                <i class="fa-solid fa-circle-info"></i> Incomplete ({{ childrenTotal }}%). Unallocated gap generated.
+            </div>
+
+            <transition name="node">
+                <div v-if="node.isExpanded" class="mt-2 ml-3 md:ml-6 border-l-2 border-slate-200 dark:border-slate-700 pl-3 md:pl-5 relative">
+                    <asset-node v-for="(child, i) in node.children" :key="child.id" :node="child" :parent-array="node.children" :index="i" :level="level + 1" :parent-value="nodeValue" :selected-chart-id="selectedChartId" :is-privacy-mode="isPrivacyMode" :fx-rate="fxRate" :currency-symbol="currencySymbol" @select-node="$emit('select-node', $event)"></asset-node>
+                    <button @click.stop="addChild" class="mt-1.5 text-[11px] font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center gap-1.5 py-1 px-2 rounded hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors border border-transparent hover:border-primary-100 dark:hover:border-primary-800"><i class="fa-solid fa-plus"></i> Add Subset Item</button>
+                </div>
+            </transition>
+        </div>
+    </script>
+
+    <!-- MAIN APP -->
+    <div id="app" :class="[currentTheme, isMobileMode ? 'mobile-active bg-slate-50 dark:bg-slate-900 border-x border-slate-200 dark:border-slate-800' : '']">
+        
+        <!-- UNIFIED TOP HEADER BAR -->
+        <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 shadow-sm">
+            <div class="max-w-[1600px] mx-auto px-4 py-2.5 flex items-center justify-between gap-4 overflow-x-auto hide-scrollbar">
+                
+                <!-- Left: Logo & Title -->
+                <div class="flex items-center gap-3 shrink-0">
+                    <div class="w-9 h-9 bg-primary-600 text-white rounded-lg flex items-center justify-center text-lg shadow-md shrink-0">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div class="flex items-center text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                        <span class="hidden sm:inline">Architect</span>
+                        <span class="hidden sm:inline text-slate-300 dark:text-slate-600 mx-2 font-light">/</span>
+                        <input type="text" v-model="goalName" placeholder="Goal Name" class="bg-transparent outline-none w-32 sm:w-48 placeholder:text-slate-400 text-lg sm:text-xl">
+                    </div>
+                </div>
+
+                <!-- Middle: Tabs -->
+                <div v-show="!isMobileMode" class="hidden lg:flex items-center gap-1 shrink-0 bg-slate-100 dark:bg-slate-900/50 p-1 rounded-lg">
+                    <button v-for="tab in ['Builder', 'Projections', 'Smart Router', 'Compare', 'History']" :key="tab" @click="currentTab = tab" 
+                        :class="currentTab === tab ? 'bg-slate-900 dark:bg-primary-600 text-white shadow-sm' : 'hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'" 
+                        class="px-3 py-1.5 rounded-md text-sm font-semibold transition-all">
+                        {{ tab }}
+                    </button>
+                </div>
+
+                <!-- Right: Controls & Actions -->
+                <div class="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
+                    
+                    <!-- App View Toggle (Always Visible) -->
+                    <button @click="isMobileMode = !isMobileMode" class="hidden sm:flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition border border-slate-200 dark:border-slate-600 shrink-0" title="Toggle App View">
+                        <i class="fa-solid fa-mobile-screen"></i> <span>App View</span>
+                    </button>
+
+                    <!-- Utils Group (Currency, Privacy, Theme) -->
+                    <div class="hidden xl:flex items-center gap-3 bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shrink-0">
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-globe text-slate-400 text-xs"></i>
+                            <select v-model="activeCurrency" class="bg-transparent text-slate-700 dark:text-slate-200 text-xs outline-none cursor-pointer font-semibold">
+                                <option value="INR">₹ INR</option><option value="USD">$ USD</option><option value="EUR">€ EUR</option>
+                            </select>
+                        </div>
+                        <div class="w-px h-3.5 bg-slate-300 dark:bg-slate-600"></div>
+                        <button @click="isPrivacyMode = !isPrivacyMode" class="text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors flex items-center gap-1 text-xs font-semibold" :class="isPrivacyMode ? 'text-amber-500 dark:text-amber-400' : ''" title="Privacy Mode">
+                            <i :class="isPrivacyMode ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i> Privacy
+                        </button>
+                        <div class="w-px h-3.5 bg-slate-300 dark:bg-slate-600"></div>
+                        <div class="flex items-center gap-1.5">
+                            <button @click="changeTheme('blue')" class="w-3.5 h-3.5 rounded-full bg-blue-500 border border-slate-300 dark:border-slate-600" :class="currentTheme==='blue'?'ring-2 ring-offset-1 ring-offset-white dark:ring-offset-slate-800 ring-blue-500':''"></button>
+                            <button @click="changeTheme('emerald')" class="w-3.5 h-3.5 rounded-full bg-emerald-500 border border-slate-300 dark:border-slate-600" :class="currentTheme==='emerald'?'ring-2 ring-offset-1 ring-offset-white dark:ring-offset-slate-800 ring-emerald-500':''"></button>
+                        </div>
+                        <button @click="toggleTheme" class="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors ml-1">
+                            <i :class="isDarkMode ? 'fa-solid fa-sun text-amber-500' : 'fa-solid fa-moon text-blue-500'"></i>
+                        </button>
+                    </div>
+
+                    <!-- Action Buttons Group -->
+                    <div v-show="!isMobileMode" class="hidden md:flex items-center gap-2 shrink-0">
+                        <button @click="showHelpModal = true" class="w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 transition border border-slate-200 dark:border-slate-600" title="Documentation"><i class="fa-solid fa-circle-question"></i></button>
+                        <button @click="clearCanvas" class="w-8 h-8 flex items-center justify-center bg-red-50 text-red-600 rounded-lg hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 transition border border-red-200 dark:border-red-800/50" title="Clear Canvas"><i class="fa-solid fa-trash-can"></i></button>
+
+                        <div class="flex bg-slate-50 dark:bg-slate-800 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 h-8">
+                            <button @click="exportData('json')" class="px-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold border-r border-slate-200 dark:border-slate-700" title="Export JSON">JSON</button>
+                            <button @click="exportCSV" class="px-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold border-r border-slate-200 dark:border-slate-700" title="Export CSV">CSV</button>
+                            <button @click="exportPDF" class="px-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold border-r border-slate-200 dark:border-slate-700" title="Export PDF">PDF</button>
+                            <button @click="triggerFileUpload" class="px-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700" title="Import Config"><i class="fa-solid fa-upload"></i></button>
+                            <input type="file" id="universalUpload" @change="importFile" accept=".json, .csv" class="hidden">
+                        </div>
+
+                        <div class="flex bg-primary-600 rounded-lg overflow-hidden shadow-sm h-8">
+                            <button @click="startScanner" class="text-white px-3 text-xs font-semibold hover:bg-primary-700 transition border-r border-primary-700 flex items-center"><i class="fa-solid fa-camera mr-1.5"></i>Scan</button>
+                            <button @click="showShareModal = true" class="text-white px-2.5 hover:bg-primary-700 transition" title="Share QR"><i class="fa-solid fa-qrcode"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Mobile Fallback Triggers -->
+                    <div v-if="isMobileMode || windowWidth < 768" class="flex gap-2 md:hidden">
+                        <button @click="showShareModal = true" class="w-9 h-9 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg flex items-center justify-center"><i class="fa-solid fa-qrcode"></i></button>
+                        <button @click="startScanner" class="w-9 h-9 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white rounded-lg flex items-center justify-center"><i class="fa-solid fa-camera"></i></button>
+                        <button @click="toggleTheme" class="w-9 h-9 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white rounded-lg flex items-center justify-center"><i :class="isDarkMode ? 'fa-solid fa-sun' : 'fa-solid fa-moon'"></i></button>
+                    </div>
+
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <div id="pdf-content-area" class="pb-10 relative z-10 max-w-[1600px] mx-auto p-4 md:p-6" :class="isMobileMode ? '!p-0' : ''">
+            
+            <!-- TAB 1: BUILDER -->
+            <div v-show="currentTab === 'Builder'" class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
+                
+                <!-- Left Side: Asset Builder -->
+                <div class="w-full bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl app-card border border-slate-200 dark:border-slate-700 shadow-soft transition-colors">
+                    
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-5 gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
+                        <div class="flex items-center gap-2 sm:gap-3 text-xs text-slate-600 dark:text-slate-400 font-medium bg-slate-50 dark:bg-slate-900/50 py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 inline-flex w-full sm:w-auto justify-center sm:justify-start">
+                            <span class="hidden sm:inline">Target Yr:</span>
+                            <span class="sm:hidden">Yr:</span>
+                            <input type="number" v-model.number="targetYear" class="bg-white dark:bg-slate-800 w-16 sm:w-20 outline-none text-slate-900 dark:text-white font-bold text-center border border-slate-300 dark:border-slate-600 rounded focus:border-primary-500 py-0.5">
+                            <span class="text-slate-300 dark:text-slate-600 mx-1">|</span>
+                            <button @click="applyGlidePath" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold transition-colors flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-plane-arrival"></i> Glide-Path Assistant</button>
+                        </div>
+                        
+                        <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900/50 p-1 rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto w-full sm:w-auto justify-center hide-scrollbar">
+                            <button @click="undo" :disabled="historyIndex <= 0" class="p-1.5 w-8 h-8 rounded-md text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white hover:bg-white hover:shadow-sm dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all flex items-center justify-center shrink-0" title="Undo"><i class="fa-solid fa-rotate-left"></i></button>
+                            <button @click="redo" :disabled="historyIndex >= historyStack.length - 1" class="p-1.5 w-8 h-8 rounded-md text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white hover:bg-white hover:shadow-sm dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all flex items-center justify-center shrink-0" title="Redo"><i class="fa-solid fa-rotate-right"></i></button>
+                            <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5 shrink-0"></div>
+                            
+                            <button v-if="selectedNodeForChart" @click="selectedNodeForChart = null" class="bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 px-3 h-8 rounded-md text-xs font-semibold hover:bg-primary-100 transition-colors whitespace-nowrap shrink-0 flex items-center"><i class="fa-solid fa-arrow-left mr-1.5"></i> Global</button>
+                            <button v-else @click="loadSampleProfile" class="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 h-8 rounded-md text-xs font-semibold hover:bg-slate-100 border border-slate-200 dark:border-slate-600 transition-all shadow-sm whitespace-nowrap flex items-center gap-1.5 shrink-0"><i class="fa-solid fa-flask text-emerald-500"></i> Sample</button>
+                        </div>
+                    </div>
+
+                    <div v-if="totalMainPct > 100" class="mb-4 text-xs font-medium text-red-700 bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-400 px-4 py-3 rounded-lg flex items-center shadow-sm"><i class="fa-solid fa-triangle-exclamation text-base mr-2"></i> Portfolio exceeds 100% (Currently {{ totalMainPct }}%). Adjust weights below.</div>
+                    <div v-else-if="totalMainPct > 0 && totalMainPct < 100" class="mb-4 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 px-4 py-3 rounded-lg flex items-center shadow-sm"><i class="fa-solid fa-circle-info text-base mr-2"></i> Global Portfolio incomplete (Currently {{ totalMainPct }}%). Space mapping applied.</div>
+
+                    <div class="space-y-1">
+                        <asset-node v-for="(asset, i) in mainAssets" :key="asset.id" :node="asset" :parent-array="mainAssets" :index="i" :level="0" :parent-value="totalAmount" :selected-chart-id="selectedNodeForChart ? selectedNodeForChart.id : null" :is-privacy-mode="isPrivacyMode" :fx-rate="fxRate" :currency-symbol="currencySymbol" @select-node="selectedNodeForChart = $event"></asset-node>
+                    </div>
+                    <button @click="addRootAsset" class="w-full py-3 mt-4 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-slate-500 dark:text-slate-400 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:border-primary-400 hover:text-primary-600 transition-all"><i class="fa-solid fa-plus mr-1.5"></i> Add Root Asset Class</button>
+                </div>
+
+                <!-- Right Side: Chart & Capital -->
+                <div class="w-full flex flex-col gap-6 lg:gap-8 sticky top-24">
+                    
+                    <!-- Capital Base Card -->
+                    <div class="bg-white dark:bg-slate-800 text-slate-800 dark:text-white p-5 md:p-6 rounded-2xl app-card shadow-soft border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><i class="fa-solid fa-wallet text-6xl text-primary-600"></i></div>
+                        <label class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider block mb-2">Total Capital Base</label>
+                        <div class="relative mb-5">
+                            <span class="absolute left-4 top-3 text-slate-400 font-bold text-lg">{{ currencySymbol }}</span>
+                            <input :type="isPrivacyMode ? 'password' : 'number'" v-model.number="totalAmountInput" class="pl-9 pr-4 py-2.5 w-full border border-slate-200 dark:border-slate-700 rounded-xl font-extrabold text-xl bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-primary-500 transition-all shadow-inner-soft" min="0">
+                        </div>
+                        
+                        <!-- Auth & Password Input -->
+                        <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <label class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider block mb-2">Authentication & Sync</label>
+                            <div class="flex gap-2 w-full mb-2">
+                                <select v-model="selectedProfile" @change="loadProfile" class="w-full px-3 h-10 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-slate-50 dark:bg-slate-900 font-medium outline-none focus:border-primary-500 text-slate-900 dark:text-white transition-colors">
+                                    <option value="">-- Load Saved Profile --</option><option v-for="prof in savedProfiles" :key="prof" :value="prof">{{ prof }}</option>
+                                </select>
+                                <button v-if="selectedProfile" @click="deleteProfile" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 h-10 rounded-lg text-sm font-bold transition-colors dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 shrink-0 border border-red-200 dark:border-red-800/50" title="Delete Profile"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                            <div class="flex items-center gap-2 w-full">
+                                <input type="text" v-model="profileName" placeholder="Save As..." class="flex-1 min-w-0 px-3 h-10 border border-slate-300 dark:border-slate-700 rounded-lg outline-none text-sm bg-slate-50 dark:bg-slate-900 focus:border-primary-500 transition-colors text-slate-900 dark:text-white">
+                                <input type="password" v-model="profilePassword" placeholder="Pass" class="w-20 sm:w-24 shrink-0 px-3 h-10 border border-slate-300 dark:border-slate-700 rounded-lg outline-none text-sm bg-slate-50 dark:bg-slate-900 focus:border-primary-500 transition-colors text-slate-900 dark:text-white" title="Encryption Password">
+                                <button @click="saveProfile" class="bg-primary-600 hover:bg-primary-500 text-white px-3 sm:px-4 h-10 shrink-0 rounded-lg text-sm font-bold transition-colors shadow-md">Save</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart & Risk -->
+                    <div class="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-2xl app-card border border-slate-200 dark:border-slate-700 shadow-soft">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-extrabold text-base text-slate-900 dark:text-white leading-tight">{{ selectedNodeForChart ? selectedNodeForChart.name : 'Global Chart' }}</h3>
+                                <p class="text-[11px] text-slate-500 mt-1">{{ selectedNodeForChart && selectedNodeForChart.children && selectedNodeForChart.children.length ? 'Subset Distribution' : 'Overall Allocation' }}</p>
+                            </div>
+                            <button @click="showChartNumbers = !showChartNumbers" class="bg-slate-50 dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-md text-[11px] font-semibold hover:bg-slate-100 transition-colors h-7 flex items-center"><i :class="showChartNumbers ? 'fa-solid fa-eye-slash mr-1' : 'fa-solid fa-eye mr-1'"></i> Nums</button>
+                        </div>
+                        <div class="h-64 sm:h-72 relative flex justify-center items-center mb-6">
+                            <div v-if="hasChartError" class="text-red-500 font-bold text-center absolute px-6 bg-red-50 dark:bg-red-900/20 py-4 rounded-xl border border-red-200 dark:border-red-800/50 text-sm">
+                                <i class="fa-solid fa-chart-pie block text-xl mb-2"></i>
+                                Fix 100% allocation errors<br>to view visualization.
+                            </div>
+                            <canvas v-show="!hasChartError" id="mainChart"></canvas>
+                        </div>
+                        
+                        <!-- Risk Meter -->
+                        <div class="bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-lg border border-slate-100 dark:border-slate-700/50">
+                            <div class="flex justify-between text-[11px] font-bold mb-2">
+                                <span class="text-slate-500 uppercase tracking-wider">Risk Profile</span>
+                                <span :style="{color: riskColor}">{{ riskLabel }} ({{ riskScore }})</span>
+                            </div>
+                            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden shadow-inner-soft">
+                                <div class="h-2 rounded-full transition-all duration-1000 ease-out" :style="{width: riskScore+'%', backgroundColor: riskColor}"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: PROJECTIONS -->
+            <div v-show="currentTab === 'Projections'" class="bg-white dark:bg-slate-800 p-5 md:p-8 rounded-2xl app-card border border-slate-200 dark:border-slate-700 shadow-soft mt-4 lg:mt-0">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-xl font-extrabold dark:text-white tracking-tight">Compound Projections</h2>
+                        <p class="text-xs text-slate-500 mt-1">Visualize wealth growth based on current weighted returns.</p>
+                    </div>
+                    <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-lg shadow-inner-soft w-full sm:w-auto">
+                        <button @click="projectionMode = 'nominal'" :class="projectionMode==='nominal'?'bg-white dark:bg-slate-700 shadow-sm text-primary-600 dark:text-primary-400 font-semibold':'text-slate-500 dark:text-slate-400 font-medium'" class="flex-1 sm:flex-none px-3 py-1.5 text-xs rounded-md transition-all h-8">Nominal</button>
+                        <button @click="projectionMode = 'real'" :class="projectionMode==='real'?'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400 font-semibold':'text-slate-500 dark:text-slate-400 font-medium'" class="flex-1 sm:flex-none px-3 py-1.5 text-xs rounded-md transition-all h-8">Real (Power)</button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 bg-slate-50 dark:bg-slate-900/50 p-4 md:p-5 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-2">Monthly Contribution ({{ currencySymbol }})</label>
+                        <input type="number" v-model.number="monthlySIP" class="ent-input font-bold text-base h-10">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-2 flex justify-between">
+                            <span>Projection Tenure</span>
+                            <span class="text-primary-600 dark:text-primary-400">{{ projectionYears }} Years</span>
+                        </label>
+                        <input type="range" v-model.number="projectionYears" min="5" max="40" class="w-full mt-2 accent-primary-600 h-5">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center mb-8">
+                    <div class="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm"><p class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1.5">Invested Principal</p><p class="font-extrabold text-lg dark:text-white">{{ isPrivacyMode ? '***' : formatCurrency(projectedPrincipal) }}</p></div>
+                    <div class="p-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/50 rounded-xl shadow-sm"><p class="text-[10px] text-emerald-600 dark:text-emerald-500 font-semibold uppercase tracking-wider mb-1.5">Est. Wealth Gained</p><p class="font-extrabold text-lg text-emerald-700 dark:text-emerald-400">+{{ isPrivacyMode ? '***' : formatCurrency(projectedWealth - projectedPrincipal) }}</p></div>
+                    <div class="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-md relative overflow-hidden">
+                        <div class="absolute -right-3 -bottom-3 opacity-5 pointer-events-none"><i class="fa-solid fa-chart-pie text-6xl text-primary-600"></i></div>
+                        <p class="text-[10px] font-semibold uppercase tracking-wider mb-1.5 text-slate-500">Future Portfolio Value</p>
+                        <p class="text-xl font-black text-primary-600 dark:text-primary-400">{{ isPrivacyMode ? '***' : formatCurrency(projectedWealth) }}</p>
+                    </div>
+                </div>
+
+                <div class="h-80 w-full"><canvas id="projChart"></canvas></div>
+            </div>
+
+            <!-- TAB 3: SMART ROUTER -->
+            <div v-show="currentTab === 'Smart Router'" class="bg-white dark:bg-slate-800 p-5 md:p-8 rounded-2xl app-card border border-slate-200 dark:border-slate-700 shadow-soft mt-4 lg:mt-0">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-xl font-extrabold dark:text-white tracking-tight">Smart Cash Deployment</h2>
+                        <p class="text-xs text-slate-500 mt-1">Input fresh capital to calculate optimal rebalancing allocations.</p>
+                    </div>
+                    <div class="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/50 flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+                        <label class="text-xs font-bold text-emerald-800 dark:text-emerald-400 whitespace-nowrap">New Deposit</label>
+                        <div class="relative w-full sm:w-40">
+                            <span class="absolute left-2.5 top-2 text-emerald-600 font-bold">{{ currencySymbol }}</span>
+                            <input type="number" v-model.number="freshCapitalInput" placeholder="Amount" class="w-full pl-7 pr-2 py-1.5 h-9 border-none rounded-md font-black text-base bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm" min="0">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+                    <table class="w-full text-left text-xs whitespace-nowrap">
+                        <thead class="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold border-b border-slate-200 dark:border-slate-700">
+                            <tr><th class="p-3 border-b border-transparent dark:border-slate-700">Deepest Asset Node</th><th class="p-3 border-b border-transparent dark:border-slate-700">Target %</th><th class="p-3 border-b border-transparent dark:border-slate-700">Current Holding ({{ currencySymbol }})</th><th class="p-3 border-b border-transparent dark:border-slate-700 text-right">Recommended Action</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50 bg-white dark:bg-slate-800">
+                            <tr v-for="asset in flatLeaves" :key="asset.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                                <td class="p-3 font-semibold flex items-center gap-2 dark:text-white text-sm">
+                                    <span class="w-3 h-3 rounded shadow-sm border border-black/10 shrink-0" :style="{backgroundColor: asset.color}"></span>{{ asset.name }}
+                                </td>
+                                <td class="p-3 font-bold text-slate-700 dark:text-slate-300">{{ asset.globalPct.toFixed(1) }}%</td>
+                                <td class="p-3"><input type="number" v-model.number="asset.currentValue" class="ent-input h-8 w-28 font-mono font-semibold" min="0"></td>
+                                <td class="p-3 text-right font-bold text-sm" :class="getRebalanceAction(asset).colorClass">{{ isPrivacyMode ? '***' : getRebalanceAction(asset).text }}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-white font-semibold text-sm">
+                            <tr class="flex flex-col md:table-row">
+                                <td class="p-3 rounded-bl-xl border-b md:border-b-0 border-slate-200 dark:border-slate-700" colspan="2"><span class="text-slate-500 dark:text-slate-400 font-normal mr-1.5 text-xs">Post-Deposit Target:</span> {{ isPrivacyMode ? '***' : formatCurrency(actualTotal + freshCapital) }}</td>
+                                <td class="p-3 border-b md:border-b-0 border-slate-200 dark:border-slate-700"><span class="text-slate-500 dark:text-slate-400 font-normal mr-1.5 text-xs">Total Mkt Value:</span> {{ isPrivacyMode ? '***' : formatCurrency(actualTotal) }}</td>
+                                <td class="p-3 md:text-right text-emerald-600 dark:text-emerald-400 rounded-br-xl"><span class="text-slate-500 dark:text-slate-400 font-normal mr-1.5 text-xs">Unallocated Leftover:</span> {{ isPrivacyMode ? '***' : formatCurrency(unallocatedCash) }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 4: COMPARE -->
+            <div v-show="currentTab === 'Compare'" class="space-y-6 mt-4 lg:mt-0">
+                <div class="bg-white dark:bg-slate-800 p-5 md:p-8 rounded-2xl app-card border border-slate-200 dark:border-slate-700 shadow-soft">
+                    <div class="flex flex-col md:flex-row justify-between mb-6 gap-4">
+                        <div>
+                            <h2 class="text-xl font-extrabold dark:text-white tracking-tight">Configuration Comparison</h2>
+                            <p class="text-xs text-slate-500 mt-1">Analyze structural differences between saved profiles.</p>
+                        </div>
+                        <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900/50 p-1 rounded-lg border border-slate-200 dark:border-slate-700 w-full sm:w-auto">
+                            <button @click="compareViewType = 'percent'" :class="compareViewType === 'percent' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400'" class="flex-1 sm:flex-none px-3 h-8 rounded-md text-xs font-semibold transition">Percentage %</button>
+                            <button @click="compareViewType = 'money'" :class="compareViewType === 'money' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400'" class="flex-1 sm:flex-none px-3 h-8 rounded-md text-xs font-semibold transition">Value {{currencySymbol}}</button>
+                            <div class="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+                            <button @click="compareB = ''; compareA = 'current'" class="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 px-2.5 h-8 rounded-md text-xs font-semibold transition">Clear</button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                        <div>
+                            <label class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">Base Profile (A)</label>
+                            <select v-model="compareA" class="ent-input h-9 py-1 font-semibold text-primary-700 dark:text-primary-400">
+                                <option value="current">Current Active Canvas</option>
+                                <option v-for="p in savedProfiles" :value="p">{{p}}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">Comparison Profile (B)</label>
+                            <select v-model="compareB" class="ent-input h-9 py-1 font-semibold text-emerald-700 dark:text-emerald-400">
+                                <option value="">-- Select Profile --</option>
+                                <option v-for="p in savedProfiles" :value="p">{{p}}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">Analysis Depth</label>
+                            <select v-model="compareLevel" class="ent-input h-9 py-1 font-semibold">
+                                <option value="root">Root Asset Classes</option>
+                                <option value="leaves">Deepest Subsets</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div v-if="compareB" class="h-80 relative mb-8"><canvas id="compBarChart"></canvas></div>
+                    <div v-else class="h-48 flex flex-col items-center justify-center text-slate-400 font-semibold border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/20 rounded-xl mb-8 text-center px-4">
+                        <i class="fa-solid fa-code-compare text-3xl mb-2 text-slate-300 dark:text-slate-600"></i>
+                        <span class="text-xs">Select a Profile B to visualize comparative allocations.</span>
+                    </div>
+                    
+                    <hr class="border-slate-200 dark:border-slate-700 mb-6">
+                    
+                    <div>
+                        <h3 class="font-extrabold text-lg mb-4 dark:text-white tracking-tight">Historical Wealth Trajectory</h3>
+                        <div v-if="compareB" class="h-72 relative"><canvas id="compHistChart"></canvas></div>
+                        <div v-else class="text-xs text-slate-400 italic text-center py-8">Historical tracking requires a secondary profile for comparison.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: HISTORY -->
+            <div v-show="currentTab === 'History'" class="bg-white dark:bg-slate-800 p-5 md:p-8 rounded-2xl app-card border border-slate-200 dark:border-slate-700 shadow-soft mt-4 lg:mt-0">
+                
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-xl font-extrabold dark:text-white tracking-tight">Timeline Analytics & Logs</h2>
+                        <p class="text-xs text-slate-500 mt-1">Track portfolio evolution and manage historical records.</p>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+                        <div class="flex items-center bg-slate-50 dark:bg-slate-900/50 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <select v-model="historyTimeScale" class="bg-transparent px-2.5 h-8 rounded-md text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none border-r border-slate-200 dark:border-slate-700 rounded-r-none">
+                                <option value="exact">Exact (All Logs)</option>
+                                <option value="day">Daily Aggregate</option>
+                                <option value="month">Monthly Aggregate</option>
+                                <option value="year">Yearly Aggregate</option>
+                            </select>
+                            <button @click="historyViewType = 'percent'" :class="historyViewType === 'percent' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400'" class="px-2.5 h-8 rounded-md text-xs font-semibold transition ml-0.5">Pct %</button>
+                            <button @click="historyViewType = 'money'" :class="historyViewType === 'money' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400'" class="px-2.5 h-8 rounded-md text-xs font-semibold transition">Val {{currencySymbol}}</button>
+                        </div>
+                        <button @click="logSnapshot" class="bg-slate-900 dark:bg-primary-600 hover:bg-slate-800 dark:hover:bg-primary-500 text-white px-4 h-10 rounded-lg text-xs font-bold shadow-md transition-all whitespace-nowrap"><i class="fa-solid fa-clock-rotate-left mr-1.5"></i>Log Current State</button>
+                    </div>
+                </div>
+                
+                <div v-if="activeHistory.length === 0" class="p-12 text-center text-slate-400 font-semibold border-dashed border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/20 rounded-xl">
+                    <i class="fa-solid fa-timeline text-4xl mb-3 text-slate-300 dark:text-slate-600 block"></i>
+                    <span class="text-sm">No historical data logged for this profile yet.</span>
+                </div>
+                <div v-else class="space-y-8">
+                    <!-- Chart Controls -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3">
+                            <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Select Assets to Visualize:</label>
+                            <div class="relative w-full sm:w-auto">
+                                <i class="fa-solid fa-search absolute left-2.5 top-2.5 text-slate-400 text-xs pointer-events-none"></i>
+                                <input type="text" v-model="historySearchQuery" placeholder="Filter assets..." class="ent-input pl-7 py-1.5 w-full sm:w-56 h-9 text-xs">
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
+                            <label v-for="name in filteredHistoryAssets" :key="name" class="flex items-center gap-1.5 text-xs font-medium cursor-pointer bg-white dark:bg-slate-800 px-2.5 h-8 border border-slate-200 dark:border-slate-600 rounded-md shadow-sm hover:border-primary-400 transition-colors select-none">
+                                <input type="checkbox" :value="name" v-model="selectedHistoryAssets" class="accent-primary-600 w-3.5 h-3.5 rounded"> <span class="dark:text-white">{{ name }}</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="h-[400px] w-full relative"><canvas id="histChart"></canvas></div>
+
+                    <!-- RAW LOG TABLE -->
+                    <div class="pt-6 border-t border-slate-200 dark:border-slate-700">
+                        <h3 class="text-base font-extrabold mb-3 dark:text-white tracking-tight">Raw Timeline Logs</h3>
+                        <div class="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm">
+                            <table class="w-full text-left text-xs whitespace-nowrap">
+                                <thead class="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold">
+                                    <tr><th class="p-3 border-b border-slate-200 dark:border-slate-700">Timestamp</th><th class="p-3 border-b border-slate-200 dark:border-slate-700">Total Portfolio Value</th><th class="p-3 border-b border-slate-200 dark:border-slate-700 text-right">Actions</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50 bg-white dark:bg-slate-800">
+                                    <tr v-for="(log, idx) in [...activeHistory].reverse()" :key="log.date" class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                                        <td class="p-3 font-semibold text-slate-700 dark:text-slate-300 font-mono">{{ new Date(log.date).toLocaleString() }}</td>
+                                        <td class="p-3 font-bold">{{ isPrivacyMode ? '***' : formatCurrency(log.total) }}</td>
+                                        <td class="p-3 text-right">
+                                            <button @click="deleteHistoryLog(activeHistory.length - 1 - idx)" class="text-slate-400 hover:text-red-500 p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors" title="Delete Log Entry"><i class="fa-solid fa-trash-can"></i></button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile App Bottom Navigation (Sticky) -->
+        <nav v-if="isMobileMode" class="fixed bottom-0 left-0 sm:left-1/2 sm:-translate-x-1/2 w-full sm:max-w-[430px] bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-around items-center h-[72px] z-50 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] rounded-b-none sm:rounded-b-2xl">
+            <button v-for="(icon, tab) in {'Builder': 'fa-layer-group', 'Projections': 'fa-chart-line', 'Smart Router': 'fa-money-bill-transfer', 'Compare': 'fa-code-compare', 'History': 'fa-clock-rotate-left'}"
+                :key="tab" @click="currentTab = tab"
+                class="flex flex-col items-center justify-center w-full h-full text-[10px] font-bold transition-colors"
+                :class="currentTab === tab ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600'">
+                <i class="fa-solid mb-1 text-xl" :class="icon"></i>
+                <span class="truncate w-full text-center">{{ tab === 'Smart Router' ? 'Router' : tab }}</span>
+            </button>
+        </nav>
+
+        <!-- Share Modal -->
+        <div v-show="showShareModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4" @click.self="showShareModal = false">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 text-center relative max-w-sm w-full border border-slate-200 dark:border-slate-700">
+                <button @click="showShareModal = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors bg-slate-100 dark:bg-slate-700 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-sm"></i></button>
+                <h3 class="text-lg font-extrabold mb-2 dark:text-white tracking-tight">Encrypted QR Profile</h3>
+                <p class="text-xs text-slate-500 mb-5">Scan directly via the app scanner. Configuration is embedded securely within the matrix.</p>
+                <div class="flex justify-center mb-5 p-3 bg-white border-2 border-slate-200 rounded-xl shadow-sm inline-block"><div id="qrcode"></div></div>
+                <p v-if="isPrivacyMode" class="text-[11px] font-bold text-amber-600 bg-amber-50 py-2 px-3 rounded-md"><i class="fa-solid fa-lock mr-1"></i> Privacy Mode Active: Totals stripped.</p>
+            </div>
+        </div>
+
+        <!-- Scanner Modal -->
+        <div v-show="showScannerModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-center justify-center z-[60] p-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 text-center relative w-full max-w-md border border-slate-200 dark:border-slate-700">
+                <button @click="forceCloseScanner" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors bg-slate-100 dark:bg-slate-700 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-sm"></i></button>
+                <h3 class="text-xl font-extrabold mb-5 dark:text-white tracking-tight">Scan Configuration</h3>
+                
+                <div id="reader" class="w-full bg-black rounded-xl overflow-hidden shadow-inner mb-5 flex items-center justify-center min-h-[200px] border border-slate-300 dark:border-slate-600 relative">
+                    <div class="absolute inset-0 border-2 border-primary-500/30 rounded-xl pointer-events-none"></div>
+                    <span v-if="cameraErrorMsg" class="text-white text-xs px-4 font-medium">{{ cameraErrorMsg }}</span>
+                </div>
+                
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">OR</span>
+                    <div class="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+                </div>
+                
+                <button @click="triggerQrImageUpload" class="w-full bg-slate-50 hover:bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-white py-2.5 h-10 rounded-lg text-sm font-bold border border-slate-200 dark:border-slate-600 transition-colors shadow-sm"><i class="fa-solid fa-image mr-1.5 text-primary-500"></i> Upload QR Image</button>
+                <input type="file" id="qrImageUpload" accept="image/*" class="hidden" @change="handleQrImage">
+            </div>
+        </div>
+
+        <!-- Help Modal -->
+        <div v-show="showHelpModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4" @click.self="showHelpModal = false">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 relative max-w-2xl w-full max-h-[85vh] overflow-y-auto border border-slate-200 dark:border-slate-700 custom-scrollbar">
+                <button @click="showHelpModal = false" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors bg-slate-100 dark:bg-slate-700 w-8 h-8 rounded-full flex items-center justify-center sticky float-right"><i class="fa-solid fa-xmark text-sm"></i></button>
+                <h3 class="text-2xl font-extrabold mb-6 dark:text-white tracking-tight"><i class="fa-solid fa-book text-primary-600 mr-2"></i> Enterprise Manual</h3>
+                
+                <div class="space-y-4 text-xs text-slate-600 dark:text-slate-300">
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50"><h4 class="font-extrabold text-slate-900 dark:text-white text-sm mb-1.5"><i class="fa-solid fa-sitemap mr-1.5 text-primary-500"></i>Infinite Subsets & Validation</h4><p>Create nested categories indefinitely. If a parent group's allocations deviate from 100%, the interface flags it. Sub-100% allocations render an "Unallocated" segment in visual charts.</p></div>
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50"><h4 class="font-extrabold text-slate-900 dark:text-white text-sm mb-1.5"><i class="fa-solid fa-clock-rotate-left mr-1.5 text-primary-500"></i>State Recovery (Undo/Redo)</h4><p>Accidental deletions or weight changes can be instantly reverted via the top dashboard controls, maintaining a localized session history stack.</p></div>
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50"><h4 class="font-extrabold text-slate-900 dark:text-white text-sm mb-1.5"><i class="fa-solid fa-qrcode mr-1.5 text-primary-500"></i>Encrypted Payloads</h4><p>The generated QR codes do not link externally; they compress and AES-encrypt your structural array directly into the visual matrix. Highly secure offline sharing.</p></div>
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50"><h4 class="font-extrabold text-slate-900 dark:text-white text-sm mb-1.5"><i class="fa-solid fa-shield-halved mr-1.5 text-primary-500"></i>Privacy Mode</h4><p>Engaging the global privacy toggle obfuscates all absolute monetary values. Generating a shareable QR while active completely strips the capital base from the payload.</p></div>
+                    <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50"><h4 class="font-extrabold text-slate-900 dark:text-white text-sm mb-1.5"><i class="fa-solid fa-money-bill-transfer mr-1.5 text-primary-500"></i>Algorithmic Router</h4><p>Input incoming liquidity to calculate optimal distribution paths. The router cross-references target allocations against current market values to dictate the most efficient buy actions.</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
+
+        Chart.register(ChartDataLabels);
+
+        const AssetNode = {
+            name: 'AssetNode', template: '#asset-node-template',
+            props: { node: Object, parentArray: Array, index: Number, level: { type: Number, default: 0 }, parentValue: { type: Number, default: 0 }, selectedChartId: [Number, String], isPrivacyMode: Boolean, fxRate: Number, currencySymbol: String },
+            emits: ['select-node'],
+            computed: {
+                nodeValue() { return this.parentValue * ((this.node.percentage || 0) / 100); },
+                childrenTotal() { return !this.node.children ? 0 : this.node.children.reduce((s, c) => s + (c.percentage || 0), 0); },
+                isError() { if(this.parentArray) { const pTotal = this.parentArray.reduce((s,c)=>s+(c.percentage||0),0); if(pTotal>100) return true; } return false; },
+                formattedValue() { return new Intl.NumberFormat('en-IN', { style: 'currency', currency: this.currencySymbol==='₹'?'INR':this.currencySymbol==='$'?'USD':'EUR', maximumFractionDigits: 0 }).format(this.nodeValue * this.fxRate).replace('₹', this.currencySymbol); },
+                isSelected() { return this.node.id === this.selectedChartId; }
+            },
+            methods: {
+                addChild() {
+                    if (!this.node.children) this.node.children = [];
+                    const cols = ['#f43f5e', '#ec4899', '#a855f7', '#6366f1', '#3b82f6', '#0ea5e9', '#14b8a6', '#10b981', '#eab308', '#f59e0b'];
+                    this.node.children.push({ id: Date.now() + Math.random(), name: '', percentage: 0, color: cols[Math.floor(Math.random()*cols.length)], children: [], isExpanded: true });
+                    this.node.isExpanded = true;
+                },
+                removeSelf() { if(this.parentArray) this.parentArray.splice(this.index, 1); },
+                generateSymbol(name) {
+                    if(!name) return '✨'; const n = name.toLowerCase();
+                    if(n.includes('gold')||n.includes('metal')) return '🪙'; if(n.includes('stock')||n.includes('equity')||n.includes('etf')||n.includes('mf')) return '📈';
+                    if(n.includes('bond')||n.includes('debt')||n.includes('epf')) return '📜'; if(n.includes('liquid')||n.includes('cash')||n.includes('bank')) return '🏦';
+                    if(n.includes('real estate')||n.includes('property')||n.includes('reit')) return '🏢';
+                    return name.substring(0,2).toUpperCase();
+                }
+            }
+        };
+
+        const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
+
+        createApp({
+            components: { AssetNode },
+            setup() {
+                const isDarkMode = ref(document.documentElement.classList.contains('dark'));
+                const currentTheme = ref('blue');
+                const currentTab = ref('Builder');
+                const isPrivacyMode = ref(false);
+                const isMobileMode = ref(false);
+                const showChartNumbers = ref(true);
+                const showShareModal = ref(false);
+                const showScannerModal = ref(false);
+                const showHelpModal = ref(false);
+                const cameraErrorMsg = ref('');
+                let html5QrCode = null;
+                const windowWidth = ref(window.innerWidth);
+                
+                const activeCurrency = ref('INR');
+                const fxRates = ref({ USD: 83.5, EUR: 89.2 }); 
+                const inflationRate = ref(6.0);
+                
+                const goalName = ref('Core Portfolio');
+                const targetYear = ref(new Date().getFullYear() + 10);
+                const totalAmountInput = ref(100000);
+                
+                const projectionYears = ref(10);
+                const monthlySIP = ref(10000);
+                const projectionMode = ref('nominal');
+                const freshCapitalInput = ref(50000);
+                
+                const profileName = ref('');
+                const profilePassword = ref('');
+                const selectedProfile = ref('');
+                const savedProfiles = ref([]);
+                const activeHistory = ref([]);
+                const historyViewType = ref('percent');
+                const historyTimeScale = ref('month');
+                const historySearchQuery = ref('');
+                
+                const selectedNodeForChart = ref(null);
+                const compareA = ref('current'); const compareB = ref(''); const compareLevel = ref('root'); const compareViewType = ref('percent');
+
+                const historyStack = ref([]);
+                const historyIndex = ref(-1);
+                const isUndoRedoAction = ref(false);
+
+                const mainAssets = ref([
+                    { id: 1, name: 'Equities', percentage: 65, returnRate: 12, color: '#3b82f6', isExpanded: true, children: [ { id: 11, name: 'Domestic MFs', percentage: 70, color: '#8b5cf6' }, { id: 12, name: 'US ETF', percentage: 30, color: '#ec4899' } ] },
+                    { id: 2, name: 'Debt & Fixed', percentage: 35, returnRate: 8, color: '#10b981', isExpanded: false, children: [] }
+                ]);
+
+                let mChart=null, pChart=null, hChart=null, cBarChart=null, cHistChart=null, qrCodeInst=null;
+                const defPalette = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#f97316', '#14b8a6', '#64748b'];
+                const themesMap = { 'blue': '59, 130, 246', 'indigo': '79, 70, 229', 'emerald': '16, 185, 129', 'slate': '100, 116, 139' };
+
+                const fxRate = computed(() => activeCurrency.value === 'INR' ? 1 : (1 / fxRates.value[activeCurrency.value]));
+                const currencySymbol = computed(() => activeCurrency.value==='INR'?'₹':activeCurrency.value==='USD'?'$':'€');
+                const totalAmount = computed(() => totalAmountInput.value);
+                const freshCapital = computed(() => freshCapitalInput.value);
+                
+                const formatCurrency = (val) => {
+                    if (isNaN(val) || val === null) return currencySymbol.value + '0';
+                    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val * fxRate.value).replace('₹', currencySymbol.value);
+                };
+
+                const totalMainPct = computed(() => mainAssets.value.reduce((s, a) => s + (a.percentage || 0), 0));
+                const checkTreeErrors = (nodes) => { let err = nodes.reduce((s,c)=>s+(c.percentage||0),0)>100; if(err) return true; for(let n of nodes) { if(n.children && checkTreeErrors(n.children)) return true; } return false; };
+                const hasChartError = computed(() => totalMainPct.value > 100 || checkTreeErrors(mainAssets.value));
+
+                const saveStateToUndo = () => {
+                   if(isUndoRedoAction.value) { isUndoRedoAction.value = false; return; }
+                   const state = JSON.stringify(mainAssets.value);
+                   if(historyIndex.value >= 0 && historyStack.value[historyIndex.value] === state) return;
+                   historyStack.value = historyStack.value.slice(0, historyIndex.value + 1);
+                   historyStack.value.push(state);
+                   historyIndex.value++;
+                };
+                watch(mainAssets, saveStateToUndo, {deep: true});
+                
+                const undo = () => { if(historyIndex.value > 0) { isUndoRedoAction.value = true; historyIndex.value--; mainAssets.value = JSON.parse(historyStack.value[historyIndex.value]); } };
+                const redo = () => { if(historyIndex.value < historyStack.value.length - 1) { isUndoRedoAction.value = true; historyIndex.value++; mainAssets.value = JSON.parse(historyStack.value[historyIndex.value]); } };
+
+                onMounted(() => {
+                    window.addEventListener('resize', () => { windowWidth.value = window.innerWidth; });
+                    window.addEventListener('keydown', (e) => {
+                        if (e.ctrlKey || e.metaKey) {
+                            if (e.key === 'z') { e.preventDefault(); undo(); }
+                            if (e.key === 'y') { e.preventDefault(); redo(); }
+                        }
+                    });
+                });
+
+                const addRootAsset = () => { mainAssets.value.push({ id: Date.now(), name: '', percentage: 0, returnRate: 7, color: defPalette[mainAssets.value.length % defPalette.length], isExpanded: true, children: [] }); };
+
+                const clearCanvas = () => {
+                    if (confirm("Reset architect canvas? Unsaved structural changes will be discarded.")) {
+                        mainAssets.value = []; addRootAsset(); totalAmountInput.value = 100000; selectedProfile.value = ''; profileName.value = ''; activeHistory.value = []; selectedNodeForChart.value = null;
+                        historyStack.value = []; historyIndex.value = -1;
+                        goalName.value = 'Core Portfolio';
+                        targetYear.value = new Date().getFullYear() + 10;
+                    }
+                };
+
+                const riskScore = computed(() => {
+                    if (totalMainPct.value === 0) return 0;
+                    let riskWeight = mainAssets.value.reduce((sum, a) => sum + ((a.percentage/100) * ((a.returnRate||0) > 9 ? 90 : 30)), 0);
+                    return Math.min(100, Math.round(riskWeight));
+                });
+                const riskColor = computed(() => { const s = riskScore.value; return s < 40 ? '#10b981' : s < 70 ? '#f59e0b' : '#ef4444'; });
+                const riskLabel = computed(() => { const s = riskScore.value; return s < 40 ? 'Conservative' : s < 70 ? 'Balanced' : 'Aggressive'; });
+
+                const applyGlidePath = () => {
+                    const yLeft = Math.max(0, targetYear.value - new Date().getFullYear());
+                    let eqPct = yLeft <= 1 ? 20 : yLeft <= 5 ? 40 : 70;
+                    if(mainAssets.value.length >= 2) { mainAssets.value[0].percentage = eqPct; mainAssets.value[1].percentage = 100 - eqPct; alert(`Glide-Path Activated: Equity allocation rebalanced to ${eqPct}%.`); }
+                };
+
+                const blendedReturn = computed(() => mainAssets.value.reduce((s, a) => s + ((a.percentage/100) * (a.returnRate||0)), 0));
+                const projectedPrincipal = computed(() => totalAmount.value + ((monthlySIP.value||0) * 12 * projectionYears.value));
+                const projectionData = computed(() => {
+                    const r = projectionMode.value === 'real' ? ((blendedReturn.value - inflationRate.value) / 100) : (blendedReturn.value / 100);
+                    let val = totalAmount.value; let prin = totalAmount.value; const pts = []; const sip = monthlySIP.value||0;
+                    for(let y=0; y<=projectionYears.value; y++) {
+                        if(y===0) { pts.push({ y:0, p:prin, v:val }); continue; }
+                        for(let m=0; m<12; m++) { val = val * (1 + r/12) + sip; prin += sip; }
+                        pts.push({ y:y, p:prin, v:val });
+                    }
+                    return pts;
+                });
+                const projectedWealth = computed(() => projectionData.value.length ? projectionData.value[projectionData.value.length-1].v : 0);
+
+                const flatLeaves = computed(() => {
+                    const extract = (nodes, pMult) => {
+                        let res = [];
+                        nodes.forEach(n => {
+                            const mult = pMult * ((n.percentage||0)/100);
+                            if(n.children && n.children.length) res = res.concat(extract(n.children, mult));
+                            else res.push({ id: n.id, name: n.name||'Unnamed', color: n.color, globalPct: mult*100, get currentValue(){return n._cv||0}, set currentValue(v){n._cv=v} });
+                        }); return res;
+                    }; return extract(mainAssets.value, 1);
+                });
+                const actualTotal = computed(() => flatLeaves.value.reduce((s, a) => s + a.currentValue, 0));
+                const getRebalanceAction = (asset) => {
+                    const target = (actualTotal.value + freshCapital.value) * (asset.globalPct/100);
+                    const def = target - asset.currentValue;
+                    return def <= 0 ? { text: 'Hold', colorClass: 'text-slate-400 font-medium' } : { text: `Buy ${formatCurrency(def)}`, colorClass: 'text-primary-600 dark:text-primary-400 font-bold' };
+                };
+                const unallocatedCash = computed(() => Math.max(0, freshCapital.value - flatLeaves.value.reduce((s,a) => {
+                    const def = ((actualTotal.value + freshCapital.value) * (a.globalPct/100)) - a.currentValue; return s + (def>0?def:0);
+                },0)));
+
+                const exportData = async (type) => {
+                    if (type === 'json') {
+                        const dataObj = { g: goalName.value, y: targetYear.value, t: totalAmountInput.value, m: mainAssets.value, h: activeHistory.value };
+                        const jsonStr = JSON.stringify(dataObj, null, 2);
+                        try {
+                            if (window.showSaveFilePicker) {
+                                const handle = await window.showSaveFilePicker({ suggestedName: `${profileName.value || 'portfolio'}.json`, types: [{ description: 'JSON File', accept: {'application/json': ['.json']} }] });
+                                const writable = await handle.createWritable();
+                                await writable.write(jsonStr); await writable.close();
+                            } else {
+                                const blob = new Blob([jsonStr], { type: 'application/json' });
+                                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${profileName.value || 'portfolio'}.json`; a.click();
+                            }
+                        } catch (err) { console.warn("Save cancelled."); }
+                    }
+                };
+                
+                const exportCSV = () => {
+                    let csv = "Asset,Percentage,Value\n";
+                    flatLeaves.value.forEach(a => csv += `${a.name},${a.globalPct},${(totalAmount.value * (a.globalPct/100))}\n`);
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `${profileName.value || 'portfolio'}.csv`; a.click();
+                };
+                
+                const exportPDF = () => {
+                    const element = document.getElementById('pdf-content-area');
+                    html2pdf().set({ 
+                        margin: 0.5, 
+                        filename: `${profileName.value || 'portfolio'}_report.pdf`, 
+                        image: { type: 'jpeg', quality: 1 }, 
+                        html2canvas: { scale: 2, useCORS: true }, 
+                        jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' } 
+                    }).from(element).save();
+                };
+                
+                const triggerFileUpload = () => document.getElementById('universalUpload').click();
+                const importFile = (e) => {
+                    const file = e.target.files[0]; if (!file) return;
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        try {
+                            if (ext === 'json') {
+                                const p = JSON.parse(evt.target.result);
+                                goalName.value = p.g || ''; targetYear.value = p.y || new Date().getFullYear(); totalAmountInput.value = p.t; mainAssets.value = p.m; activeHistory.value = p.h || []; 
+                            } else if (ext === 'csv') {
+                                const lines = evt.target.result.split('\n'); const roots = [];
+                                for(let i=1; i<lines.length; i++) {
+                                    const p = lines[i].split(','); if(p.length < 2) continue;
+                                    roots.push({ id: Date.now()+i, name: p[0], percentage: parseFloat(p[1]), color: defPalette[i%defPalette.length], children: [] });
+                                }
+                                mainAssets.value = roots;
+                            }
+                            alert("Configuration imported successfully.");
+                        } catch (err) { alert("Invalid structure format."); }
+                        e.target.value = null;
+                    };
+                    reader.readAsText(file);
+                };
+
+                const loadProfilesList = () => { savedProfiles.value = Object.keys(localStorage).filter(k => k.startsWith('p14_')).map(k => k.replace('p14_', '')); };
+                
+                const saveProfile = () => {
+                    if(!profileName.value) return alert("Designate a profile name before saving.");
+                    const dataObj = { g: goalName.value, y: targetYear.value, t: totalAmountInput.value, m: mainAssets.value, h: activeHistory.value };
+                    const raw = profilePassword.value ? 'ENC::' + CryptoJS.AES.encrypt(JSON.stringify(dataObj), profilePassword.value).toString() : JSON.stringify(dataObj);
+                    localStorage.setItem('p14_' + profileName.value, raw); loadProfilesList(); selectedProfile.value = profileName.value; 
+                };
+                
+                const deleteProfile = () => {
+                    if(!selectedProfile.value) return;
+                    if(confirm(`Are you sure you want to delete profile '${selectedProfile.value}'?`)) {
+                        localStorage.removeItem('p14_' + selectedProfile.value);
+                        loadProfilesList();
+                        selectedProfile.value = '';
+                    }
+                };
+
+                const getProfileData = (name) => {
+                    if(name === 'current') return { t: totalAmountInput.value, m: mainAssets.value, h: activeHistory.value };
+                    try {
+                        const raw = localStorage.getItem('p14_' + name);
+                        return raw.startsWith('ENC::') ? JSON.parse(CryptoJS.AES.decrypt(raw.replace('ENC::', ''), prompt("🔒 Password required for "+name)||'').toString(CryptoJS.enc.Utf8)) : JSON.parse(raw);
+                    } catch(e) { return null; }
+                };
+                
+                const loadProfile = () => {
+                    if(!selectedProfile.value) return;
+                    const p = getProfileData(selectedProfile.value);
+                    if(p) { goalName.value = p.g || ''; targetYear.value = p.y || new Date().getFullYear(); totalAmountInput.value = p.t; mainAssets.value = p.m; activeHistory.value = p.h || []; profileName.value = selectedProfile.value; }
+                    else { alert("Authentication Failed."); selectedProfile.value = ''; }
+                };
+                
+                const logSnapshot = () => { 
+                    activeHistory.value.push({ date: new Date().toISOString(), total: totalAmountInput.value, tree: JSON.parse(JSON.stringify(mainAssets.value)) }); 
+                };
+                const deleteHistoryLog = (index) => {
+                    if (confirm("Delete this log entry?")) {
+                        activeHistory.value.splice(index, 1);
+                    }
+                };
+                
+                const groupHistoryByScale = (history, scale) => {
+                    if (!history || history.length === 0) return [];
+                    if (scale === 'exact') {
+                        return history.map(h => ({ ...h, label: new Date(h.date).toLocaleString(undefined, {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) })).sort((a,b) => new Date(a.date) - new Date(b.date));
+                    }
+                    
+                    const grouped = {};
+                    history.forEach(h => {
+                        const d = new Date(h.date);
+                        let key = '';
+                        if(scale === 'day') key = d.toLocaleDateString();
+                        else if(scale === 'month') key = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+                        else if(scale === 'year') key = d.getFullYear().toString();
+                        
+                        if(!grouped[key] || new Date(h.date) > new Date(grouped[key].date)) {
+                            grouped[key] = { ...h, label: key };
+                        }
+                    });
+                    return Object.values(grouped).sort((a,b) => new Date(a.date) - new Date(b.date));
+                };
+
+                const selectedHistoryAssets = ref([]);
+                const availableHistoryAssets = computed(() => {
+                    if (!activeHistory.value || activeHistory.value.length === 0) return [];
+                    const names = new Set();
+                    const traverse = (nodes) => { nodes.forEach(n => { if (n.name) names.add(n.name); if (n.children) traverse(n.children); }); };
+                    activeHistory.value.forEach(h => traverse(h.tree)); return Array.from(names).sort();
+                });
+                const filteredHistoryAssets = computed(() => {
+                    if(!historySearchQuery.value) return availableHistoryAssets.value;
+                    return availableHistoryAssets.value.filter(n => n.toLowerCase().includes(historySearchQuery.value.toLowerCase()));
+                });
+                watch(availableHistoryAssets, () => { if (selectedHistoryAssets.value.length === 0 && activeHistory.value.length > 0) { selectedHistoryAssets.value = activeHistory.value[activeHistory.value.length - 1].tree.filter(n => n.name).map(n => n.name); } }, { immediate: true });
+
+                const loadSampleProfile = () => {
+                    totalAmountInput.value = 500000;
+                    mainAssets.value = [ { id: 1, name: 'Equities', percentage: 65, returnRate: 12, color: '#3b82f6', isExpanded: true, children: [ { id: 11, name: 'Domestic MFs', percentage: 70, color: '#8b5cf6' }, { id: 12, name: 'US ETF', percentage: 30, color: '#ec4899' } ] }, { id: 2, name: 'Debt & Fixed', percentage: 35, returnRate: 8, color: '#10b981', isExpanded: false, children: [] } ];
+                    activeHistory.value = [];
+                    for(let i=12; i>=0; i--) { 
+                        const d = new Date(); d.setMonth(d.getMonth() - i); 
+                        const eqNoise = (Math.random() * 6) - 3; 
+                        const baseEq = 60 + (12-i)*0.5; 
+                        const snapTree = [ { name: 'Equities', percentage: baseEq + eqNoise, children: [ { name: 'Domestic MFs', percentage: 70 }, { name: 'US ETF', percentage: 30 } ] }, { name: 'Debt & Fixed', percentage: 100 - (baseEq + eqNoise), children: [] } ];
+                        activeHistory.value.push({ date: d.toISOString(), total: 500000 - (i*10000), tree: snapTree }); 
+                    }
+                    selectedNodeForChart.value = null; profileName.value = 'Demo Growth Trajectory';
+                };
+
+                const generateQRData = () => {
+                    const data = { m: mainAssets.value };
+                    if(!isPrivacyMode.value) data.t = totalAmountInput.value;
+                    const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(data));
+                    const encrypted = CryptoJS.AES.encrypt(compressed, "AppSecret123").toString();
+                    return 'PORTFOLIO_V16::' + encrypted;
+                };
+                
+                watch(showShareModal, async (showing) => {
+                    if(showing) { await nextTick(); const el = document.getElementById("qrcode"); if(el) { el.innerHTML = ''; qrCodeInst = new QRCode(el, { text: generateQRData(), width: 220, height: 220, colorDark : isDarkMode.value ? "#1e293b" : "#0f172a", colorLight : isDarkMode.value ? "#ffffff" : "#ffffff", correctLevel : QRCode.CorrectLevel.L }); } }
+                });
+
+                const forceCloseScanner = () => {
+                    showScannerModal.value = false;
+                    cameraErrorMsg.value = '';
+                    try { if(html5QrCode) { if(html5QrCode.isScanning) html5QrCode.stop().catch(()=>{}); html5QrCode.clear(); } } catch(e) {}
+                };
+
+                const startScanner = () => {
+                    showScannerModal.value = true;
+                    cameraErrorMsg.value = "Establishing device feed...";
+                    nextTick(() => {
+                        html5QrCode = new Html5Qrcode("reader");
+                        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, (decodedText) => {
+                            handleDecodedQR(decodedText);
+                        }).catch(err => { 
+                            cameraErrorMsg.value = "Hardware access restricted. Ensure HTTPS context or utilize Image Upload.";
+                        });
+                    });
+                };
+                const stopScanner = () => { showScannerModal.value = false; cameraErrorMsg.value = ''; if(html5QrCode) { html5QrCode.stop().catch(e=>{}); html5QrCode.clear(); } };
+                
+                const triggerQrImageUpload = () => document.getElementById('qrImageUpload').click();
+                const handleQrImage = (e) => {
+                    const file = e.target.files[0]; if(!file) return;
+                    cameraErrorMsg.value = "Extracting matrix... Please wait.";
+                    
+                    setTimeout(() => {
+                        if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+                        try {
+                            if(html5QrCode.getState() === 2) { html5QrCode.stop().then(() => { runFileScan(file); }).catch(() => { runFileScan(file); }); } 
+                            else { runFileScan(file); }
+                        } catch(ex) { runFileScan(file); }
+                    }, 100);
+                    e.target.value = null;
+                };
+
+                const runFileScan = (file) => {
+                    html5QrCode.scanFile(file, true)
+                    .then(decodedText => { cameraErrorMsg.value = ""; handleDecodedQR(decodedText); })
+                    .catch(err => { cameraErrorMsg.value = "Pattern undetected. Reposition and attempt again."; });
+                };
+
+                const handleDecodedQR = (decodedText) => {
+                    forceCloseScanner();
+                    try {
+                        let dataStr = "";
+                        if(decodedText.startsWith('PORTFOLIO_V16::')) {
+                            const encrypted = decodedText.replace('PORTFOLIO_V16::', '');
+                            dataStr = CryptoJS.AES.decrypt(encrypted, "AppSecret123").toString(CryptoJS.enc.Utf8);
+                        } else if(decodedText.startsWith('http')) {
+                            const url = new URL(decodedText); dataStr = url.searchParams.get('c');
+                        }
+                        if(dataStr) {
+                            const data = JSON.parse(LZString.decompressFromEncodedURIComponent(dataStr));
+                            mainAssets.value = data.m || []; if(data.t) totalAmountInput.value = data.t; 
+                        }
+                    } catch(e) { alert("Matrix structure invalid or corrupted."); }
+                };
+
+                const changeTheme = (themeName) => {
+                    currentTheme.value = themeName;
+                    document.documentElement.style.setProperty('--theme-primary', themesMap[themeName]);
+                    drawCharts();
+                };
+
+                const toggleTheme = () => { isDarkMode.value = !isDarkMode.value; isDarkMode.value ? document.documentElement.classList.add('dark') : document.documentElement.classList.remove('dark'); localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light'); drawCharts(); };
+
+                const generateStyles = (nodes, isRoot) => {
+                    const bg = []; const seen = {};
+                    nodes.forEach((n, i) => {
+                        let c = isRoot ? n.color : defPalette[(i+2)%defPalette.length];
+                        const pct = n.percentage||0;
+                        if(seen[pct] && pct>0) bg.push(pattern.draw('cross', c, isDarkMode.value?'#1e293b':'#ffffff', 10)); else { bg.push(c); seen[pct]=true; }
+                    }); return bg;
+                };
+
+                const drawCharts = async () => {
+                    await nextTick();
+                    Chart.defaults.color = isDarkMode.value ? '#94a3b8' : '#64748b';
+                    Chart.defaults.font.family = 'Inter, sans-serif';
+                    
+                    if(currentTab.value === 'Builder' && !hasChartError.value) {
+                        if(mChart) mChart.destroy(); const ctx = document.getElementById('mainChart');
+                        if(ctx) {
+                            const isRoot = !selectedNodeForChart.value; 
+                            let nodes = isRoot ? mainAssets.value : (selectedNodeForChart.value.children && selectedNodeForChart.value.children.length > 0 ? selectedNodeForChart.value.children : [{ name: selectedNodeForChart.value.name, percentage: 100, color: selectedNodeForChart.value.color }]);
+                            let vNodes = nodes.filter(n=>n.name);
+                            
+                            let curTotal = vNodes.reduce((s,a)=>s+(a.percentage||0), 0);
+                            let bgCols = generateStyles(vNodes, isRoot);
+                            if(curTotal < 100) {
+                                vNodes = [...vNodes, { name: 'Unallocated', percentage: 100 - curTotal }];
+                                bgCols.push(isDarkMode.value ? '#334155' : '#e2e8f0'); // Gray slice
+                            }
+
+                            mChart = new Chart(ctx, { 
+                                type: 'doughnut', 
+                                data: { labels: vNodes.map(n=>n.name), datasets: [{ data: vNodes.map(n=>n.percentage||0), backgroundColor: bgCols, borderWidth: 3, borderColor: isDarkMode.value?'#1e293b':'#fff', hoverOffset: 4 }] }, 
+                                options: { 
+                                    responsive: true, maintainAspectRatio: false, cutout: '70%',
+                                    plugins: { 
+                                        legend: { position: 'right', labels: { usePointStyle: true, padding: 20, font: { weight: '600' } } },
+                                        datalabels: { display: showChartNumbers.value, color: '#fff', font: { weight: 'bold' }, formatter: (value) => { return value > 5 ? value + '%' : ''; } },
+                                        tooltip: { backgroundColor: isDarkMode.value ? '#0f172a' : '#1e293b', padding: 12, cornerRadius: 8, titleFont: { size: 14 } }
+                                    } 
+                                } 
+                            });
+                        }
+                    }
+
+                    if(currentTab.value === 'Projections') {
+                        if(pChart) pChart.destroy(); const ctx = document.getElementById('projChart');
+                        if(ctx) {
+                            const d = projectionData.value;
+                            if(d && d.length > 0) {
+                                pChart = new Chart(ctx, { 
+                                    type: 'line', 
+                                    data: { labels: d.map(x=>'Yr '+x.y), datasets: [ { label: 'Total Value', data: d.map(x=>x.v), borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.15)', fill: true, borderWidth: 3, tension: 0.4 }, { label: 'Invested Principal', data: d.map(x=>x.p), borderColor: '#94a3b8', borderDash: [5,5], fill: false, borderWidth: 2, tension: 0.4 } ] }, 
+                                    options: { 
+                                        responsive: true, maintainAspectRatio: false, 
+                                        scales: { x: { grid: { color: isDarkMode.value ? '#334155' : '#e2e8f0' } }, y: { grid: { color: isDarkMode.value ? '#334155' : '#e2e8f0' }, beginAtZero: true } },
+                                        plugins: { datalabels: { display: false }, tooltip: { mode: 'index', intersect: false, backgroundColor: isDarkMode.value ? '#0f172a' : '#1e293b', padding: 12, cornerRadius: 8 } },
+                                        interaction: { mode: 'nearest', axis: 'x', intersect: false }
+                                    } 
+                                });
+                            }
+                        }
+                    }
+
+                    if(currentTab.value === 'Compare') {
+                        if(cBarChart) cBarChart.destroy(); const ctxB = document.getElementById('compBarChart');
+                        if(cHistChart) cHistChart.destroy(); const ctxH = document.getElementById('compHistChart');
+
+                        if(compareA.value && compareB.value) {
+                            const pA = getProfileData(compareA.value); const pB = getProfileData(compareB.value);
+                            if(pA && pB) {
+                                const getLevelData = (tree) => {
+                                    if(compareLevel.value === 'root') return tree.filter(n=>n.name).map(n=>({name: n.name, pct: n.percentage||0}));
+                                    else {
+                                        let leaves = []; const ext = (nodes, pMult) => { nodes.forEach(n => { const mult = pMult * ((n.percentage||0)/100); if(n.children && n.children.length) ext(n.children, mult); else leaves.push({name: n.name, pct: mult*100}); }); };
+                                        ext(tree, 1); return leaves;
+                                    }
+                                };
+                                const dA = getLevelData(pA.m); const dB = getLevelData(pB.m);
+                                const allLabels = Array.from(new Set([...dA.map(a=>a.name), ...dB.map(b=>b.name)])).sort();
+                                
+                                cBarChart = new Chart(ctxB, {
+                                    type: 'bar',
+                                    data: {
+                                        labels: allLabels,
+                                        datasets: [
+                                            { label: compareA.value === 'current' ? 'Current Active' : compareA.value, data: allLabels.map(l => { const pct = (dA.find(a=>a.name===l)?.pct || 0); return compareViewType.value === 'percent' ? pct : (pct/100)*(pA.t||0); }), backgroundColor: '#3b82f6', borderRadius: 4 },
+                                            { label: compareB.value, data: allLabels.map(l => { const pct = (dB.find(b=>b.name===l)?.pct || 0); return compareViewType.value === 'percent' ? pct : (pct/100)*(pB.t||0); }), backgroundColor: '#10b981', borderRadius: 4 }
+                                        ]
+                                    },
+                                    options: { 
+                                        responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: isDarkMode.value ? '#334155' : '#e2e8f0' } }, x: { grid: { color: isDarkMode.value ? '#334155' : '#e2e8f0', display: false } } },
+                                        plugins: { datalabels: { display: showChartNumbers.value, color: isDarkMode.value ? '#f8fafc' : '#0f172a', align: 'end', anchor: 'end', font: { weight: '600' }, formatter: (val) => val > 0 ? (compareViewType.value === 'percent' ? val.toFixed(1) + '%' : formatCurrency(val)) : '' }, tooltip: { backgroundColor: isDarkMode.value ? '#0f172a' : '#1e293b', padding: 12, cornerRadius: 8 } }
+                                    }
+                                });
+
+                                const hA = pA.h || []; const hB = pB.h || [];
+                                const allDates = [...new Set([...hA.map(h=>h.date), ...hB.map(h=>h.date)])].sort();
+                                const formatHist = (hist, dates) => dates.map(d => { const snap = hist.find(h=>h.date===d); return snap ? snap.total : null; });
+                                
+                                cHistChart = new Chart(ctxH, {
+                                    type: 'line',
+                                    data: {
+                                        labels: allDates.map(d => new Date(d).toLocaleDateString(undefined, {month:'short', year:'2-digit'})),
+                                        datasets: [
+                                            { label: compareA.value === 'current' ? 'Current Active' : compareA.value, data: formatHist(hA, allDates), borderColor: '#3b82f6', tension: 0.4, spanGaps: true, borderWidth: 3, pointBackgroundColor: '#3b82f6' },
+                                            { label: compareB.value, data: formatHist(hB, allDates), borderColor: '#10b981', tension: 0.4, spanGaps: true, borderWidth: 3, pointBackgroundColor: '#10b981' }
+                                        ]
+                                    },
+                                    options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: isDarkMode.value ? '#334155' : '#e2e8f0' } }, y: { grid: { color: isDarkMode.value ? '#334155' : '#e2e8f0' } } }, plugins: { datalabels: { display: false }, tooltip: { backgroundColor: isDarkMode.value ? '#0f172a' : '#1e293b', padding: 12, cornerRadius: 8, mode: 'index' } } }
+                                });
+                            }
+                        }
+                    }
+
+                    if(currentTab.value === 'History' && activeHistory.value.length) {
+                        if(hChart) hChart.destroy(); const ctx = document.getElementById('histChart');
+                        if(ctx) {
+                            const groupedHist = groupHistoryByScale(activeHistory.value, historyTimeScale.value);
+                            const lbls = groupedHist.map(h=>h.label);
+                            const findNodePct = (nodes, name) => { for(let n of nodes) { if(n.name === name) return n.percentage || n.pct; if(n.children) { const found = findNodePct(n.children, name); if(found) return found; } } return null; };
+                            const dsets = selectedHistoryAssets.value.map((name, i) => ({
+                                label: name, data: groupedHist.map(h => { const pct = findNodePct(h.tree, name); return !pct ? 0 : (historyViewType.value === 'percent' ? pct : h.total * (pct/100)); }),
+                                borderColor: defPalette[i%defPalette.length], backgroundColor: defPalette[i%defPalette.length], tension: 0.4, fill: false, borderWidth: 3, pointRadius: 4, pointHoverRadius: 6
+                            }));
+                            hChart = new Chart(ctx, { 
+                                type: 'line', data: { labels: lbls, datasets: dsets }, 
+                                options: { 
+                                    responsive: true, maintainAspectRatio: false, 
+                                    scales: { x: { grid: { color: isDarkMode.value ? '#334155' : '#e2e8f0' } }, y: { grid: { color: isDarkMode.value ? '#334155' : '#e2e8f0' } } }, 
+                                    plugins: { 
+                                        datalabels: { display: showChartNumbers.value, align: 'top', font: { weight: '600' }, formatter: (val) => val > 0 ? (historyViewType.value === 'percent' ? val.toFixed(1) + '%' : formatCurrency(val)) : '' },
+                                        tooltip: { backgroundColor: isDarkMode.value ? '#0f172a' : '#1e293b', padding: 12, cornerRadius: 8, mode: 'index' }
+                                    },
+                                    interaction: { mode: 'nearest', axis: 'x', intersect: false }
+                                } 
+                            });
+                        }
+                    }
+                };
+
+                watch([mainAssets, selectedNodeForChart, currentTab, projectionYears, projectionMode, activeCurrency, inflationRate, compareA, compareB, compareLevel, compareViewType, currentTheme, selectedHistoryAssets, historyViewType, historyTimeScale, showChartNumbers, isMobileMode, windowWidth], drawCharts, { deep: true });
+                
+                onMounted(() => { 
+                    saveStateToUndo();
+                    document.documentElement.style.setProperty('--theme-primary', themesMap[currentTheme.value]);
+                    loadProfilesList(); drawCharts();
+                });
+
+                return {
+                    isDarkMode, currentTheme, currentTab, isPrivacyMode, isMobileMode, windowWidth, showChartNumbers, showShareModal, clearCanvas,
+                    showScannerModal, showHelpModal, cameraErrorMsg, forceCloseScanner, startScanner, stopScanner, triggerQrImageUpload, handleQrImage,
+                    activeCurrency, fxRates, fxRate, currencySymbol, inflationRate, formatCurrency,
+                    goalName, targetYear, totalAmountInput, totalAmount, freshCapitalInput, freshCapital,
+                    monthlySIP, projectionYears, projectionMode, projectedPrincipal, projectedWealth,
+                    profileName, profilePassword, selectedProfile, savedProfiles, activeHistory,
+                    historySearchQuery, filteredHistoryAssets, selectedHistoryAssets, availableHistoryAssets, historyViewType, historyTimeScale,
+                    mainAssets, selectedNodeForChart, compareA, compareB, compareLevel, compareViewType, flatLeaves, actualTotal, unallocatedCash,
+                    totalMainPct, hasChartError, riskScore, riskColor, riskLabel,
+                    historyStack, historyIndex, undo, redo, changeTheme,
+                    addRootAsset, applyGlidePath, getRebalanceAction, saveProfile, loadProfile, logSnapshot, deleteHistoryLog, deleteProfile,
+                    exportData, exportCSV, exportPDF, triggerFileUpload, importFile, toggleTheme, loadSampleProfile
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
